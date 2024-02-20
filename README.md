@@ -17,7 +17,7 @@
 
 ## Features
 
-This is a framework for the evaluation of code generation models. This work is inspired from [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) for evaluating language models in general. We welcome contributions to fix issues, enhance features and add new benchmarks. You can find contribution guides in [`docs/guide.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/docs/guide.md) and [`CONTRIBUTING.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/CONTRIBUTING.md) and more documentation in [`docs/README.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/docs/README.md). 
+This is a framework for the evaluation of code generation models. This work is inspired from [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness) for evaluating language models in general. We welcome contributions to fix issues, enhance features and add new benchmarks. You can find contribution guides in [`docs/guide.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/docs/guide.md) and [`CONTRIBUTING.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/CONTRIBUTING.md) and more documentation in [`docs/README.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/docs/README.md).
 
 Below are the features and tasks of this framework:
 
@@ -57,7 +57,7 @@ pip install -e ".[ds1000]" # installs all additional dependencies except PyTorch
 # torch==1.12.1 required. Download version with relevant GPU support etc., e.g.,
 pip install torch==1.12.1+cu116 --extra-index-url https://download.pytorch.org/whl/cu116
 
-# to suppress any tensorflow optimization warnings, 
+# to suppress any tensorflow optimization warnings,
 # precede call to "accelerate launch" with "TF_CPP_MIN_LOG_LEVEL=3"
 
 # on some systems, tensorflow will attempt to allocate all GPU memory
@@ -82,7 +82,7 @@ The evaluation part (solutions execution) for [MultiPL-E](https://github.com/nup
 ## Usage
 You can use this evaluation harness to generate text solutions to code benchmarks with your model, to evaluate (and execute) the solutions or to do both. While it is better to use GPUs for the generation, the evaluation only requires CPUs. So it might be beneficial to separate these two steps. By default both generation and evaluation are performed.
 
-For more details on how to evaluate on the tasks, please refer to the documentation in [`docs/README.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/docs/README.md). 
+For more details on how to evaluate on the tasks, please refer to the documentation in [`docs/README.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/docs/README.md).
 
 ### Generation and evaluation
 Below is an example to generate and evaluate on a task.
@@ -101,8 +101,8 @@ accelerate launch  main.py \
   --allow_code_execution \
   --save_generations
 ```
-* `limit` represents the number of problems to solve, if it's not provided all problems in the benchmark are selected. 
-* `allow_code_execution` is for executing the generated code: it is off by default, read the displayed warning before calling it to enable execution. 
+* `limit` represents the number of problems to solve, if it's not provided all problems in the benchmark are selected.
+* `allow_code_execution` is for executing the generated code: it is off by default, read the displayed warning before calling it to enable execution.
 * Some models with custom code on the HF hub like [SantaCoder](https://huggingface.co/bigcode/santacoder) require calling `--trust_remote_code`, for private models add `--use_auth_token`.
 * `save_generations` saves the post-processed generations in a json file at `save_generations_path` (by default `generations.json`). You can also save references by calling `--save_references`
 * `max_length_generation` is the maximum token length of generation including the input token length. The default is 512, but for some tasks like GSM8K and GSM-Hard, the complete prompt with 8 shot examples (as used in [PAL](https://github.com/reasoning-machines/pal)) take up `~1500` tokens, hence the value should be greater than that and the recommended value of `max_length_generation` is `2048` for these tasks.
@@ -113,7 +113,7 @@ Some tasks don't require code execution such as
 
 ### Generation only
 
-If you want to generate solutions without executing and evaluating the code, call `--generation_only`, in addition to the instructions above. This will save the solutions in a json file provided in `save_generation_path` in the working directory. 
+If you want to generate solutions without executing and evaluating the code, call `--generation_only`, in addition to the instructions above. This will save the solutions in a json file provided in `save_generation_path` in the working directory.
 
 This can be useful if you don't want to execute code in the machine you're using for generations for security or efficiency reasons. For instance, you can do the generations on multiple GPUs, but switch to a multiple workers CPU machine or docker container for the execution.
 
@@ -193,7 +193,7 @@ To implement a new task in this evaluation harness, see the guide in [`docs/guid
 We provide documentation for the existing benchmarks and how to run the evaluation in [`docs/README.md`](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/docs/README.md).
 
 ## Remarks
-* Currenltly, we use data parallel evaluation across multiple GPUs using `accelerate`, this assumes that you can fit the model in one GPU. 
+* Currenltly, we use data parallel evaluation across multiple GPUs using `accelerate`, this assumes that you can fit the model in one GPU.
 
 ## Acknowledgements
 We thank EleutherAI for their work on the [lm-evaluation harness](https://github.com/EleutherAI/lm-evaluation-harness) from which this repository is inspired.

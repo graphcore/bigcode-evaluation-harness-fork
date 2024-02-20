@@ -13,7 +13,7 @@ _WARNING = """
 ################################################################################
                                   !!!WARNING!!!
 ################################################################################
-The "code_eval"/"apps_metric" you are about to use, execute untrusted 
+The "code_eval"/"apps_metric" you are about to use, execute untrusted
 model-generated code in Python.
 Although it is highly unlikely that model-generated code will do something
 overtly malicious in response to this test suite, model-generated code may act
@@ -22,7 +22,7 @@ Users are strongly encouraged to sandbox this evaluation suite so that it
 does not perform destructive actions on their host or network. For more
 information on how OpenAI sandboxes its code, see the paper "Evaluating Large
 Language Models Trained on Code" (https://arxiv.org/abs/2107.03374).
-Once you have read this disclaimer and taken appropriate precautions, set the argument 
+Once you have read this disclaimer and taken appropriate precautions, set the argument
 "allow_code_execution" to True.
 ################################################################################\
 """
@@ -47,7 +47,7 @@ class Evaluator:
         # if args.limit is used, make sure args.limit_start + args.limit <= len(dataset)
         n_tasks = min(self.args.limit, len(dataset) - self.args.limit_start) if self.args.limit else len(dataset)
         # when args.limit is None
-        # adjust n_tasks by args.limit_start to prevent out of bounds issues 
+        # adjust n_tasks by args.limit_start to prevent out of bounds issues
         if not self.args.limit:
             n_tasks -= self.args.limit_start
         references = [task.get_reference(dataset[i]) for i in range(self.args.limit_start, self.args.limit_start+n_tasks)]

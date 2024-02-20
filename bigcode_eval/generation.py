@@ -74,7 +74,7 @@ def parallel_generations(
         prompts = [task.get_prompt(doc) for doc in dataset]
         awaitables = [client.completions.create(
             model=args.model,
-            prompt=prompt, 
+            prompt=prompt,
             n=args.batch_size,
             max_tokens=args.max_length_generation,
             temperature=args.temperature,
@@ -101,7 +101,7 @@ def parallel_generations(
     # The input_length / start_length set to 0 for now will be adjusted later
     # Check if the task has a custom check_fn method for the stopping criteria
     if task.stop_words and tokenizer.eos_token:
-        task.stop_words.append(tokenizer.eos_token)    
+        task.stop_words.append(tokenizer.eos_token)
     if hasattr(task, "check_fn"):
         stopping_criteria.append(
             EndOfFunctionCriteria(0, task.stop_words, tokenizer, task.check_fn)
@@ -114,7 +114,7 @@ def parallel_generations(
         stopping_criteria.append(
             TooLongFunctionCriteria(0, task.max_length_multiplier)
         )
-    
+
     if stopping_criteria:
         gen_kwargs["stopping_criteria"] = StoppingCriteriaList(stopping_criteria)
 

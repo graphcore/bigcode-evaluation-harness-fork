@@ -318,7 +318,7 @@ def get_evaluator(accelerator: Accelerator, args: Namespace):
                 revision=args.revision,
                 trust_remote_code=args.trust_remote_code,
                 use_auth_token=args.use_auth_token,
-                padding_side="left",  
+                padding_side="left",
             )
         else:
             # used by default for most models
@@ -328,7 +328,7 @@ def get_evaluator(accelerator: Accelerator, args: Namespace):
                 trust_remote_code=args.trust_remote_code,
                 use_auth_token=args.use_auth_token,
                 truncation_side="left",
-                padding_side="right",  
+                padding_side="right",
             )
         if not tokenizer.eos_token:
             if tokenizer.bos_token:
@@ -338,7 +338,7 @@ def get_evaluator(accelerator: Accelerator, args: Namespace):
                 raise ValueError("No eos_token or bos_token found")
         try:
             tokenizer.pad_token = tokenizer.eos_token
-            
+
         # Some models like CodeGeeX2 have pad_token as a read-only property
         except AttributeError:
             print("Not setting pad_token to eos_token")
