@@ -1,5 +1,6 @@
 import json
 import re
+import pathlib
 
 from evaluate import load
 from bigcode_eval.base import Task
@@ -225,8 +226,14 @@ class HumanEvalPack(Task):
             prompt = f'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{inp}\n\n### Response:\n{prompt_base}'
         elif self.prompt == "codellama":
             prompt = f"[INST] {inp.strip()} [/INST] {prompt_base}"
+        elif pathlib.Path(self.prompt).exists():
+            prompt = pathlib.Path(self.prompt).read_text().format(inp, prompt_base)
         else:
-            raise ValueError(f"The --prompt argument {self.prompt} wasn't provided or isn't supported")
+            raise ValueError(
+                f"The --prompt argument {self.prompt} wasn't provided or isn't supported."
+                " It can be one of the pre-defined options or a text file defining the prompt, "
+                "the string in that file should accept two arguments eg. 'this is a prompt: {} {}' ."
+            )
         # Strip off the final \n to make the tokens more natural
         # Essentially, we want to make sure that if there was no distinction between
         # input & output, the tokens would be the same
