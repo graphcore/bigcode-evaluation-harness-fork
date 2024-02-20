@@ -118,6 +118,13 @@ class Evaluator:
             with open(save_generations_path, "w") as fp:
                 json.dump(generations, fp)
                 print(f"generations were saved at {save_generations_path}")
+
+            if hasattr(generations, "to_table"):
+                full_gen = f"{os.path.splitext(save_generations_path)[0]}_full.json"
+                with open(full_gen, "w") as fp:
+                    json.dump(generations.to_table(), fp)
+                    print(f"Full generations were saved at {full_gen}")
+
         if self.args.save_references:
             with open(save_references_path, "w") as fp:
                 json.dump(references, fp)
