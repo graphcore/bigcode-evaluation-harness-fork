@@ -1,4 +1,5 @@
 import inspect
+from .. import base
 from pprint import pprint
 
 from . import (apps, codexglue_code_to_text, codexglue_text_to_text, conala,
@@ -32,7 +33,7 @@ TASK_REGISTRY = {
 ALL_TASKS = sorted(list(TASK_REGISTRY))
 
 
-def get_task(task_name, args=None):
+def get_task(task_name, args=None)-> base.Task:
     try:
         kwargs = {}
         if "prompt" in inspect.signature(TASK_REGISTRY[task_name]).parameters:

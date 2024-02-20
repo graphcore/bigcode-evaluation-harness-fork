@@ -97,7 +97,7 @@ class Evaluator:
         if self.accelerator.is_main_process:
             if not self.args.load_generations_path:
                 save_generations_path = f"{os.path.splitext(self.args.save_generations_path)[0]}_{task_name}.json"
-                self.save_json_files(generations, references, save_generations_path, f"references_{task_name}.json")
+                self.save_json_files(generations, references, save_generations_path, self.args.save_references_path)
 
             # make sure tokenizer plays nice with multiprocessing
             os.environ["TOKENIZERS_PARALLELISM"] = "false"
