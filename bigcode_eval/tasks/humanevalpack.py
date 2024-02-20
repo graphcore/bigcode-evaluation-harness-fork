@@ -1,12 +1,13 @@
 import json
 import re
+import pathlib
 
 from evaluate import load
 from bigcode_eval.base import Task
 
 _CITATION = """
 @article{muennighoff2023octopack,
-      title={OctoPack: Instruction Tuning Code Large Language Models}, 
+      title={OctoPack: Instruction Tuning Code Large Language Models},
       author={Niklas Muennighoff and Qian Liu and Armel Zebaze and Qinkai Zheng and Binyuan Hui and Terry Yue Zhuo and Swayam Singh and Xiangru Tang and Leandro von Werra and Shayne Longpre},
       journal={arXiv preprint arXiv:2308.07124},
       year={2023}
@@ -100,7 +101,7 @@ IMPORT_HELPER = {
         "crypto/md5",
     ],
     "cpp": [
-        "using namespace std;",      
+        "using namespace std;",
         "#include<stdlib.h>",
         "#include<algorithm>",
         "#include<cmath>",
@@ -136,18 +137,18 @@ def create_task(language, name):
         def __init__(self, language=language, prompt="instruct"):
             super().__init__(language=language, prompt=prompt, with_docs=False)
     class HumanEvalFixDocs(HumanEvalFixBase):
-        def __init__(self, language=language, prompt="instruct"):            
+        def __init__(self, language=language, prompt="instruct"):
             super().__init__(language=language, prompt=prompt, with_docs=True)
     class HumanEvalExplainDescribe(HumanEvalExplainDescribeBase):
         def __init__(self, language=language, prompt="instruct"):
-            super().__init__(language=language, prompt=prompt, with_docs=False)   
+            super().__init__(language=language, prompt=prompt, with_docs=False)
     class HumanEvalExplainSynthesize(HumanEvalExplainSynthesizeBase):
         def __init__(self, language=language, prompt="instruct", load_data_path=None):
             super().__init__(language=language, prompt=prompt, with_docs=False, load_data_path=load_data_path)
     class HumanEvalSynthesize(HumanEvalSynthesizeBase):
         def __init__(self, language=language, prompt="instruct"):
             super().__init__(language=language, prompt=prompt, with_docs=True)
-    
+
     if name == "fixtests": return HumanEvalFixTests
     elif name == "fixdocs": return HumanEvalFixDocs
     elif name == "explaindescribe": return HumanEvalExplainDescribe
@@ -161,9 +162,9 @@ class HumanEvalPack(Task):
     DATASET_NAME = None
 
     def __init__(self, prompt="instruct", language="python", with_docs=True):
-        
+
         self.DATASET_NAME = language
-        self.prompt = prompt        
+        self.prompt = prompt
         stop_words = LANGUAGE_TO_STOP_WORDS[language]
         if self.prompt.startswith("edit"):
             stop_words.extend([
@@ -176,7 +177,7 @@ class HumanEvalPack(Task):
         elif self.prompt == "diff":
             stop_words = ["<commit_before>", "<commit_msg>", "<commit_after>"]
         elif self.prompt == "diff-carper":
-            stop_words = ["<BEF>", "<MSG>", "<DFF>", "\ No newline at end of file"]            
+            stop_words = ["<BEF>", "<MSG>", "<DFF>", "\ No newline at end of file"]
         stop_words.append("<|endoftext|>")
         self.with_docs = with_docs
         super().__init__(stop_words=stop_words, requires_execution=True)
@@ -188,7 +189,7 @@ class HumanEvalPack(Task):
         if self.with_docs: return doc["prompt"] # Already includes fn main for rust
         else:
             if self.DATASET_NAME == "rust":
-                # See 
+                # See
                 # https://github.com/roG0d/CodeGeeX/blob/f66205b5f615a4eead9c26d7ec297e14738ea18d/codegeex/benchmark/evaluate_humaneval_x.py#L78
                 # https://github.com/THUDM/CodeGeeX/pull/76#issuecomment-1500653190
                 return "fn main(){}\n" + doc["declaration"]
@@ -202,7 +203,7 @@ class HumanEvalPack(Task):
             inp = context + "\n" + instruction
         else:
             inp = instruction + "\n" + context
-        
+
         if self.prompt == "continue":
             assert context is None, "The `continue` prompt should only be used for HumanEvalSynthesize. Use `instruct` for HumanEvalFix and HumanEvalExplain."
             prompt = prompt_base
@@ -211,7 +212,7 @@ class HumanEvalPack(Task):
         elif self.prompt == "octocoder":
             prompt = f'Question: {inp}\n\nAnswer:\n{prompt_base}'
         elif self.prompt == "octogeex":
-            prompt = f'Question: {inp.strip()}\n\nAnswer:\n{prompt_base}'            
+            prompt = f'Question: {inp.strip()}\n\nAnswer:\n{prompt_base}'
         elif self.prompt == "starchat":
             # https://huggingface.co/HuggingFaceH4/starchat-beta
             prompt = f'<|system|>\n<|end|>\n<|user|>\n{inp}<|end|>\n<|assistant|>\n{prompt_base}'
@@ -219,14 +220,20 @@ class HumanEvalPack(Task):
             prompt = f'<commit_before><commit_msg>{inp}<commit_after>{prompt_base}'
         elif self.prompt == "instructcodet5p":
             # https://github.com/salesforce/CodeT5/blob/main/CodeT5%2B/humaneval/generate_codet5p.py#L89
-            prompt = f'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{inp}\n\n### Response:{prompt_base}'       
+            prompt = f'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{inp}\n\n### Response:{prompt_base}'
         elif self.prompt == "wizardcoder":
             # https://github.com/nlpxucan/WizardLM/blob/main/WizardCoder/src/humaneval_gen.py#L37
             prompt = f'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n{inp}\n\n### Response:\n{prompt_base}'
         elif self.prompt == "codellama":
             prompt = f"[INST] {inp.strip()} [/INST] {prompt_base}"
+        elif pathlib.Path(self.prompt).exists():
+            prompt = pathlib.Path(self.prompt).read_text().format(inp, prompt_base)
         else:
-            raise ValueError(f"The --prompt argument {self.prompt} wasn't provided or isn't supported")
+            raise ValueError(
+                f"The --prompt argument {self.prompt} wasn't provided or isn't supported."
+                " It can be one of the pre-defined options or a text file defining the prompt, "
+                "the string in that file should accept two arguments eg. 'this is a prompt: {} {}' ."
+            )
         # Strip off the final \n to make the tokens more natural
         # Essentially, we want to make sure that if there was no distinction between
         # input & output, the tokens would be the same
@@ -241,7 +248,7 @@ class HumanEvalPack(Task):
         # i.e. the model has never seen the token sequence of ['()', 'Ċ', 'ĠĠ'], but only ['()', 'ĊĠĠ']
         # The same holds for Java, JS, Go, Rust, C++ tho the start sequences are slightly different
         return prompt.strip()
-            
+
     def get_reference(self, doc, get_solution=False):
         if get_solution:
             return doc["prompt"] + doc["canonical_solution"]
@@ -270,7 +277,7 @@ class HumanEvalPackGenerative(HumanEvalPack):
             open_brackets = 2 if self.DATASET_NAME == "java" else 1
             if code.count("{") + open_brackets == code.count("}"):
                 return True
-        return False 
+        return False
 
     def remove_last_block(self, code):
         """
@@ -323,7 +330,7 @@ class HumanEvalPackGenerative(HumanEvalPack):
         gen = self.remove_last_block(generation[len(prompt):].rstrip())
         # Strip to maintain same behavior as with get_prompt
         return doc["prompt"].rstrip() + gen
-        
+
     def process_results(self, generations, references):
         """Takes the list of LM generations and evaluates them against ground truth references.
 
@@ -347,7 +354,7 @@ class HumanEvalPackGenerative(HumanEvalPack):
             for gen, doc in zip(generations, ds):
                 prompt_base = self.get_prompt_base(doc)
                 old_code = prompt_base + doc["buggy_solution"]
-                for i, diff in enumerate(gen): 
+                for i, diff in enumerate(gen):
                     try:
                         # Strip away anything to the left such as \n
                         patches = dmp.patch_fromText(diff.lstrip())
@@ -366,7 +373,7 @@ class HumanEvalPackGenerative(HumanEvalPack):
                     if not(diff_hunk):
                         gen[i] = ""
                         continue
-                    res: str = apply_diff(old_code, diff_hunk)        
+                    res: str = apply_diff(old_code, diff_hunk)
                     gen[i] = res
 
         ### CUSTOM PROG LANGUAGE CHANGES ###
@@ -450,6 +457,7 @@ class HumanEvalPackGenerative(HumanEvalPack):
             timeout=timeout,
             num_workers=num_workers,
         )
+        results["details"] = logs
         # Write logs to json
         with open("logs.json", "w") as f:
             json.dump(logs, f, indent=4, ensure_ascii=False)
@@ -457,7 +465,7 @@ class HumanEvalPackGenerative(HumanEvalPack):
         """Debugging help
         for i, (gen, ref) in enumerate(zip(generations, references)):
             import time
-            starttime = time.time()            
+            starttime = time.time()
             results, log = code_metric.compute(
                 references=[ref],
                 predictions=[gen],
@@ -485,7 +493,7 @@ class HumanEvalFixBase(HumanEvalPackGenerative):
         """Returns the synthetic filename for different datasets"""
         file_name = input_file if input_file is not None else "solution"
         return file_name + "." + LANGUAGE_TO_EXTENSION[self.DATASET_NAME]
-        
+
     def get_prompt(self, doc):
         """Builds the prompt for the LM to generate from."""
         prompt_base = self.get_prompt_base(doc)
@@ -517,7 +525,7 @@ class HumanEvalFixBase(HumanEvalPackGenerative):
             (not used for Humaneval-Task)
         """
         doc = self.get_dataset()[idx]
-        prompt = self.get_prompt(doc)        
+        prompt = self.get_prompt(doc)
         if self.prompt == "diff-carper":
             # Only remove final stopwords like <MSG>
             generation = self.remove_last_block(generation[len(prompt):].rstrip())
@@ -559,13 +567,13 @@ class HumanEvalExplainDescribeBase(HumanEvalPack):
         context = prompt_base + doc["canonical_solution"]
 
         return super().get_prompt("", instruction, context) # No prompt base as not generating
-    
+
     def get_prompt(self, doc):
         """Builds the prompt for the LM to generate from."""
         prompt_base = self.get_prompt_base(doc)
         instruction = f"Provide a concise natural language description of the code using at most {len(doc['docstring'])} characters."
         context = prompt_base + doc["canonical_solution"]
-        
+
         return super().get_prompt("", instruction, context)
 
     def remove_last_block(self, text):
@@ -580,7 +588,7 @@ class HumanEvalExplainDescribeBase(HumanEvalPack):
             if len(line) > 20 and line in text:
                 text = text.replace(line, "")
         return text
-    
+
     def postprocess_generation(self, generation, idx):
         """Defines the postprocessing for a LM generation.
         :param generation: str
@@ -610,7 +618,7 @@ class HumanEvalExplainSynthesizeBase(HumanEvalPackGenerative):
         assert load_data_path is not None, "load_data_path must be specified to load the descriptions."
         with open(load_data_path) as fp:
             self.descriptions = json.load(fp)
-            print(f"{len(self.descriptions)} descriptions with {len(self.descriptions[0])} description candidates loaded.")    
+            print(f"{len(self.descriptions)} descriptions with {len(self.descriptions[0])} description candidates loaded.")
 
         super().__init__(**kwargs)
 
@@ -630,7 +638,7 @@ class HumanEvalExplainSynthesizeBase(HumanEvalPackGenerative):
         context = doc["description"]
 
         return super().get_prompt(prompt_base, instruction, context)
-    
+
     def get_prompt(self, doc):
         """Builds the prompt for the LM to generate from."""
         prompt_base = self.get_prompt_base(doc)
@@ -648,7 +656,7 @@ class HumanEvalSynthesizeBase(HumanEvalPackGenerative):
         instruction = doc["instruction"].strip()
 
         return super().get_prompt(prompt_base, instruction)
-        
+
     def get_prompt(self, doc):
         """Builds the prompt for the LM to generate from."""
         prompt_base = self.get_prompt_base(doc)

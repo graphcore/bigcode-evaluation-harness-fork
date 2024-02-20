@@ -37,7 +37,26 @@ class TooLongFunctionCriteria(StoppingCriteria):
     def __call__(self, input_ids, scores, **kwargs):
         """Returns true if generated sequence is too long."""
         return input_ids.shape[1] > int(self.input_length * self.multiplier)
-        
+
+
+class Generations(list):
+    """A list which can carry extra data in a dictionary and can turn it all in a table.
+
+    TODO: This is a terrible hack, do something better.
+    """
+    @property
+    def sneaky_extra_data(self):
+        if not hasattr(self, "_extra_data"):
+            self._extra_data = {}
+        return self._extra_data
+
+    def to_table(self):
+        headers = [*self.sneaky_extra_data.keys(), "generations"]
+        return [
+            {k:v[0] if isinstance(v, list) and len(v)==1 else v for k, v in zip(headers, row)}
+            for row in zip(*self.sneaky_extra_data.values(), self)
+        ]
+
 
 def parallel_generations(
         task,
@@ -74,17 +93,20 @@ def parallel_generations(
         prompts = [task.get_prompt(doc) for doc in dataset]
         awaitables = [client.completions.create(
             model=args.model,
-            prompt=prompt, 
+            prompt=prompt,
             n=args.batch_size,
             max_tokens=args.max_length_generation,
             temperature=args.temperature,
             top_p=args.top_p
         ) for prompt in prompts]
         responses = asyncio.run(tqdm.gather(*awaitables))
-        generations = []
+        generations = Generations()
+        generations.sneaky_extra_data["prompts"] = prompts
+        generations.sneaky_extra_data["raw_response"] = []
         for i, (prompt, response) in enumerate(zip(prompts, responses)):
             texts = [prompt + choice.text for choice in response.choices]
             generations.append([task.postprocess_generation(text, i) for text in texts])
+            generations.sneaky_extra_data["raw_response"].append([choice.text for choice in response.choices])
         return generations
 
     set_seed(args.seed, device_specific=True)
@@ -101,7 +123,7 @@ def parallel_generations(
     # The input_length / start_length set to 0 for now will be adjusted later
     # Check if the task has a custom check_fn method for the stopping criteria
     if task.stop_words and tokenizer.eos_token:
-        task.stop_words.append(tokenizer.eos_token)    
+        task.stop_words.append(tokenizer.eos_token)
     if hasattr(task, "check_fn"):
         stopping_criteria.append(
             EndOfFunctionCriteria(0, task.stop_words, tokenizer, task.check_fn)
@@ -114,7 +136,7 @@ def parallel_generations(
         stopping_criteria.append(
             TooLongFunctionCriteria(0, task.max_length_multiplier)
         )
-    
+
     if stopping_criteria:
         gen_kwargs["stopping_criteria"] = StoppingCriteriaList(stopping_criteria)
 
